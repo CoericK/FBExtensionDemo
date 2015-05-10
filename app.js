@@ -37,8 +37,8 @@ app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
 app.use(flash()); // use connect-flash for flash messages stored in session
 
-var FB_APP_ID = 'YOUR-FACEBOOK-APP-ID';
-var FB_APP_SECRET = 'YOUR-FACEBOOK-APP-SECRET';
+var FB_APP_ID = 'YOUR-APP-ID';
+var FB_APP_SECRET = 'YOUR-SECRED-ID';
 
 
 passport.serializeUser(function (user, done) {
@@ -72,20 +72,34 @@ passport.deserializeUser(function (id, done) {
 passport.use(new FacebookStrategy({
         clientID: FB_APP_ID,
         clientSecret: FB_APP_SECRET,
-        callbackURL: "/auth/facebook/callback"
+        callbackURL: "/auth/facebook/callback",
+        enableProof: true
     },
     function (accessToken, refreshToken, profile, done) {
-        //console.log('Access Token: ', accessToken);
         //console.log('PROFILE: ', profile);
+        //console.log('Access Token: ', accessToken);
+        //console.log('Refresh Token: ', refreshToken);
         // We can check if the user exists, update it, or create a new one by:
         /*
          User.findOne({
          facebook._id = profile.id;
          })
          */
-
+        profile.accessToken = accessToken;
         // Here we use PassportFacebookExtension module by creating an instance:
         var FBExtension = new PassportFacebookExtension(FB_APP_ID, FB_APP_SECRET);
+
+        /**
+         * Extending short lived token
+         */
+        FBExtension.extendShortToken(accessToken)
+            .then(function(response){
+                console.log('Long-lived Token: ',response.access_token);
+                console.log('Expires in : ',response.expires+' secs.');
+            })
+            .fail(function(error){
+                console.log(error)
+            });
 
         FBExtension.permissionsGiven(profile.id, accessToken)
             .then(function (permissions) {
